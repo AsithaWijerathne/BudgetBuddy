@@ -51,7 +51,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="@color/bg_secondary"
         android:visibility="gone">
 
         <LinearLayout

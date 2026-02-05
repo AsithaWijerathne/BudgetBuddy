@@ -33,6 +33,8 @@ public class AddTransactionActivity extends AppCompatActivity {
     List<String> expenseCategories = new ArrayList<>(Arrays.asList("Food", "Shopping", "Transport", "Bills", "Rent"));
     List<String> incomeCategories = new ArrayList<>(Arrays.asList("Salary", "Investments", "Gifts", "Other"));
 
+    int accountIdToSave = -1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +42,8 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         prefs = getSharedPreferences("BudgetBuddyData", MODE_PRIVATE);
         loadCategoriesFromStorage(); // <--- Load saved categories immediately
+
+        accountIdToSave = getIntent().getIntExtra("selected_account_id", -1);
 
         db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "budget-db")
                 .allowMainThreadQueries().build();
@@ -149,12 +153,16 @@ public class AddTransactionActivity extends AppCompatActivity {
                 double amount = Double.parseDouble(amountStr);
                 String note = etNote.getText().toString();
 
-                // Save to DB
+                // 3. Save with the correct Account ID
                 Transaction t = new Transaction(selectedType, category, amount, note);
+
+                // IMPORTANT: Set the account ID manually before inserting!
+                t.accountId = accountIdToSave;
+
                 db.transactionDao().insert(t);
 
                 dialog.dismiss();
-                finish(); // Go back to Home
+                finish();
             }
         });
 

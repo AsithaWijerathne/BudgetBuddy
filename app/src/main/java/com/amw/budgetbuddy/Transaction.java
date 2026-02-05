@@ -12,6 +12,7 @@ public class Transaction {
     public double amount;
     public String note;
     public long timestamp;
+    public int accountId;
 
     // Constructor
     public Transaction(String type, String category, double amount, String note) {
