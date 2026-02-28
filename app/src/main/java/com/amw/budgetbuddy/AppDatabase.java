@@ -6,6 +6,8 @@ import androidx.room.RoomDatabase;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
+
 import java.util.List;
 
 @Database(entities = {Transaction.class, Account.class}, version = 2)
@@ -18,6 +20,9 @@ public abstract class AppDatabase extends RoomDatabase {
 interface TransactionDao {
     @Insert
     void insert(Transaction transaction);
+
+    @Update
+    void update(Transaction transaction);
 
     @Delete
     void delete(Transaction transaction);
@@ -39,6 +44,9 @@ interface TransactionDao {
 
     @Query("SELECT SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END) FROM transactions WHERE accountId = :id")
     double getAccountBalance(int id);
+
+    @Query("DELETE FROM transactions WHERE accountId = :id")
+    void deleteTransactionsForAccount(int id);
 }
 
 @Dao
@@ -48,4 +56,7 @@ interface AccountDao {
 
     @Query("SELECT * FROM accounts")
     List<Account> getAllAccounts();
+
+    @Query("DELETE FROM accounts WHERE id = :id")
+    void deleteAccount(int id);
 }

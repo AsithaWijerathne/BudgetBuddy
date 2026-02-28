@@ -201,4 +201,28 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         dialog.show();
     }
+
+    // Add this new method inside AddTransactionActivity:
+
+    // NEW: Popup Menu for Categories
+    public void showDeleteCategoryPopup(View anchorView, String categoryName, int position) {
+        android.widget.PopupMenu popup = new android.widget.PopupMenu(this, anchorView);
+        popup.getMenu().add("Delete '" + categoryName + "'"); // The pop-up button text
+
+        popup.setOnMenuItemClickListener(item -> {
+            // Remove from the correct list
+            if (selectedType.equals("Income")) {
+                incomeCategories.remove(position);
+            } else {
+                expenseCategories.remove(position);
+            }
+
+            saveCategoriesToStorage();
+            loadCategories();
+            Toast.makeText(this, "Category deleted", Toast.LENGTH_SHORT).show();
+            return true;
+        });
+
+        popup.show(); // Makes the button pop up!
+    }
 }

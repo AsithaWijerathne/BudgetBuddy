@@ -30,12 +30,22 @@
 
             <TextView
                 android:id="@+id/txtTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
+                android:layout_weight="1"
                 android:text="CashKeeper"
                 android:textColor="@color/text_inverse"
                 android:textSize="20sp" />
+
+            <ImageButton
+                android:id="@+id/btnDeleteAccount"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_delete"
+                app:tint="@color/text_inverse"
+                android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout
@@ -116,11 +126,13 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
-            android:layout_below="@id/tableHeader"
-            android:layout_above="@id/bottomBar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingHorizontal="20dp"/>
+            android:layout_above="@id/bottomBar"
+            android:layout_below="@id/tableHeader"
+            android:layout_marginTop="26dp"
+            android:layout_marginBottom="-27dp"
+            android:paddingHorizontal="20dp" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/btnAdd"

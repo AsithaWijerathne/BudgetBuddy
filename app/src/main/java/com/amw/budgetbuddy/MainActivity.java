@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     AppDatabase db;
     RecyclerView recyclerView;
-    TextView txtBalance, txtMonth, txtTitle; // Added txtTitle
+    TextView txtBalance, txtMonth, txtTitle;
     TransactionAdapter adapter;
 
     // Track the currently displayed month
@@ -59,7 +59,36 @@ public class MainActivity extends AppCompatActivity {
         // Initialize Views
         drawerLayout = findViewById(R.id.drawerLayout);
         navView = findViewById(R.id.navView);
-        txtTitle = findViewById(R.id.txtTitle); // Ensure this ID exists in XML
+        txtTitle = findViewById(R.id.txtTitle);
+
+        // --- NEW: Long Click on Title to Delete Account ---
+        txtTitle.setOnLongClickListener(v -> {
+            // Only show the pop-up if we are looking at a specific account (not Home)
+            if (currentAccountId != -1) {
+                android.widget.PopupMenu popup = new android.widget.PopupMenu(this, v);
+                popup.getMenu().add("Delete Account");
+
+                popup.setOnMenuItemClickListener(item -> {
+                    // 1. Delete all transactions for this account
+                    db.transactionDao().deleteTransactionsForAccount(currentAccountId);
+                    // 2. Delete the account itself
+                    db.accountDao().deleteAccount(currentAccountId);
+
+                    // 3. Reset to Home Mode
+                    currentAccountId = -1;
+                    setupDrawerMenu();
+                    updateUIForMode();
+                    loadData();
+
+                    Toast.makeText(this, "Account Deleted", Toast.LENGTH_SHORT).show();
+                    return true;
+                });
+
+                popup.show(); // Show the pop-up button under the title
+            }
+            return true; // Tells Android we handled the long-click
+        });
+
         recyclerView = findViewById(R.id.recyclerView);
         txtBalance = findViewById(R.id.txtBalance);
         txtMonth = findViewById(R.id.txtMonth);
@@ -114,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         loadData();
     }
 
-    // --- NEW: Drawer Menu Logic ---
+    // --- Drawer Menu Logic ---
     private void setupDrawerMenu() {
         Menu menu = navView.getMenu();
         menu.clear(); // Clear old items to avoid duplicates
@@ -147,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // --- NEW: Switch UI between "Month View" and "Account View" ---
+    // --- Switch UI between "Month View" and "Account View" ---
     private void updateUIForMode() {
         LinearLayout monthNav = findViewById(R.id.monthNavigation);
 
@@ -160,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
             monthNav.setVisibility(View.GONE); // Hide Month Arrows
 
             // Set Title to Account Name
-            // (Quick way: loop DB list again, or fetch single account)
             List<Account> accounts = db.accountDao().getAllAccounts();
             for(Account a : accounts) {
                 if(a.id == currentAccountId) {
@@ -171,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // --- NEW: Dialog to Create Account ---
+    // --- Dialog to Create Account ---
     private void showAddAccountDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("New Account");
@@ -193,7 +221,40 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // --- UPDATED: Data Loading Logic ---
+    // --- NEW: Dialog to Edit Transaction Amount ---
+    private void showEditAmountDialog(Transaction transaction) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Edit Amount");
+
+        // Create an input field for numbers
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+
+        // Pre-fill it with the current amount
+        input.setText(String.format(Locale.getDefault(), "%.0f", transaction.amount));
+        builder.setView(input);
+
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String newAmountStr = input.getText().toString();
+            if (!newAmountStr.isEmpty()) {
+                double newAmount = Double.parseDouble(newAmountStr);
+
+                // Update the transaction object
+                transaction.amount = newAmount;
+
+                // Save it to the database
+                db.transactionDao().update(transaction);
+
+                // Refresh the screen
+                loadData();
+                Toast.makeText(this, "Amount Updated", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    // --- Data Loading Logic ---
     private void loadData() {
         List<Transaction> list;
         double currentViewBalance = 0;
@@ -201,15 +262,10 @@ public class MainActivity extends AppCompatActivity {
         double monthExpense = 0;
 
         if (currentAccountId == -1) {
-            // ==========================
             // MODE 1: HOME (Monthly View)
-            // ==========================
-
-            // 1. Set Month Title
             SimpleDateFormat fmt = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
             txtMonth.setText(fmt.format(currentMonth.getTime()));
 
-            // 2. Calculate Dates
             Calendar startCal = (Calendar) currentMonth.clone();
             startCal.set(Calendar.DAY_OF_MONTH, 1);
             startCal.set(Calendar.HOUR_OF_DAY, 0);
@@ -225,11 +281,9 @@ public class MainActivity extends AppCompatActivity {
             endCal.set(Calendar.SECOND, 59);
             long endTimestamp = endCal.getTimeInMillis();
 
-            // 3. Get Data
             list = db.transactionDao().getTransactionsForMonthFiltered(startTimestamp, endTimestamp, -1);
             double previousBalance = db.transactionDao().getPreviousBalanceFiltered(startTimestamp, -1);
 
-            // 4. Add "Previous Balance" Row
             if (previousBalance != 0) {
                 String type = previousBalance >= 0 ? "Income" : "Expense";
                 Transaction openingTxn = new Transaction(type, "Previous Balance", Math.abs(previousBalance), "Carried forward");
@@ -240,23 +294,14 @@ public class MainActivity extends AppCompatActivity {
             currentViewBalance = previousBalance;
 
         } else {
-            // ==========================
             // MODE 2: ACCOUNT (Ledger View)
-            // ==========================
-
-            // 1. Get ALL transactions for this account (No month filter)
-            // Make sure you added this query to your DAO!
             list = db.transactionDao().getTransactionsForAccount(currentAccountId);
-
-            // 2. No "Previous Balance" row needed for raw ledger
             currentViewBalance = 0;
         }
 
-        // --- Calculate Totals for Bottom Bar ---
         for (Transaction t : list) {
-            // Skip the "Previous Balance" fake transaction for income/expense sums
             if (t.category.equals("Previous Balance")) {
-                if (currentAccountId == -1) continue; // Don't add to income/expense in Month mode
+                if (currentAccountId == -1) continue;
             }
 
             if(t.type.equals("Income")) {
@@ -268,15 +313,24 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // --- Update UI ---
         txtBalance.setText(String.format("%.0f", currentViewBalance));
         txtTotalIncome.setText("+ " + String.format("%.0f", monthIncome));
         txtTotalExpense.setText("- " + String.format("%.0f", monthExpense));
 
-        adapter = new TransactionAdapter(list, transaction -> {
-            if (transaction.category.equals("Previous Balance")) return;
-            db.transactionDao().delete(transaction);
-            loadData();
+        // --- UPDATED: Passing the dual-action listener ---
+        adapter = new TransactionAdapter(list, new TransactionAdapter.OnItemClickListener() {
+            @Override
+            public void onDeleteClick(Transaction transaction) {
+                if (transaction.category.equals("Previous Balance")) return;
+                db.transactionDao().delete(transaction);
+                loadData();
+            }
+
+            @Override
+            public void onEditClick(Transaction transaction) {
+                if (transaction.category.equals("Previous Balance")) return;
+                showEditAmountDialog(transaction);
+            }
         });
         recyclerView.setAdapter(adapter);
     }
