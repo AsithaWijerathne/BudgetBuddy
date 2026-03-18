@@ -52,9 +52,19 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         holder.btn.setTextColor(textColor);
         holder.btn.setBackgroundResource(R.drawable.bg_category_btn);
 
-        // Click Listener
+        // Normal Click Listener (Select Category)
         holder.btn.setOnClickListener(v -> {
             listener.onCategoryClick(name);
+        });
+
+        // NEW: Long Click Listener (Delete Category Popup)
+        holder.btn.setOnLongClickListener(v -> {
+            // Check if the context is your AddTransactionActivity
+            if (v.getContext() instanceof AddTransactionActivity) {
+                // Pass 'v' (the button) so the popup anchors exactly to it
+                ((AddTransactionActivity) v.getContext()).showDeleteCategoryPopup(v, name, position);
+            }
+            return true; // Return true so Android knows the long-press was handled
         });
     }
 

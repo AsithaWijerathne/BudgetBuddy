@@ -1,4 +1,5 @@
 package com.amw.budgetbuddy;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,17 +16,19 @@ import java.util.Locale;
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {
 
     private List<Transaction> transactionList;
-    private OnDeleteListener deleteListener;
+    private OnItemClickListener listener; // Renamed to handle both clicks
     private int expandedPosition = -1; // -1 means nothing is expanded
 
-    // Interface to talk to MainActivity
-    public interface OnDeleteListener {
+    // NEW: Updated Interface to talk to MainActivity for both actions
+    public interface OnItemClickListener {
         void onDeleteClick(Transaction transaction);
+        void onEditClick(Transaction transaction);
     }
 
-    public TransactionAdapter(List<Transaction> transactionList, OnDeleteListener deleteListener) {
+    // Constructor updated to use the new listener
+    public TransactionAdapter(List<Transaction> transactionList, OnItemClickListener listener) {
         this.transactionList = transactionList;
-        this.deleteListener = deleteListener;
+        this.listener = listener;
     }
 
     @NonNull
@@ -67,9 +70,16 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             notifyDataSetChanged(); // Refresh list to show/hide views
         });
 
-        // --- Delete Logic ---
+        // --- Button Click Logic ---
+
+        // Delete Button
         holder.btnDelete.setOnClickListener(v -> {
-            deleteListener.onDeleteClick(t);
+            listener.onDeleteClick(t);
+        });
+
+        // NEW: Edit Button
+        holder.btnEdit.setOnClickListener(v -> {
+            listener.onEditClick(t);
         });
     }
 
@@ -81,7 +91,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView txtCategory, txtIncome, txtExpense, txtDate, txtNote;
         LinearLayout layoutDetails;
-        ImageButton btnDelete;
+        ImageButton btnDelete, btnEdit; // Added btnEdit here
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -93,7 +103,10 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             layoutDetails = itemView.findViewById(R.id.layoutDetails);
             txtDate = itemView.findViewById(R.id.txtDate);
             txtNote = itemView.findViewById(R.id.txtNote);
+
+            // Buttons
             btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnEdit = itemView.findViewById(R.id.btnEdit); // Linked it to the layout here
         }
     }
 }

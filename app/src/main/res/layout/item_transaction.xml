@@ -51,7 +51,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="@color/bg_secondary"
         android:visibility="gone">
 
         <LinearLayout
@@ -83,6 +82,17 @@
                     android:layout_height="wrap_content"
                     android:layout_width="match_parent" />
             </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@android:drawable/ic_menu_edit"
+                android:backgroundTint="#4CAF50"
+                app:tint="@color/text_inverse"
+                android:padding="8dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Edit Transaction"/>
 
             <ImageButton
                 android:id="@+id/btnDelete"

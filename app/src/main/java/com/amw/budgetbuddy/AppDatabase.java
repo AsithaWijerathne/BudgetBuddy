@@ -6,11 +6,14 @@ import androidx.room.RoomDatabase;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
+
 import java.util.List;
 
-@Database(entities = {Transaction.class}, version = 1)
+@Database(entities = {Transaction.class, Account.class}, version = 2)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract TransactionDao transactionDao();
+    public abstract AccountDao accountDao();
 }
 
 @Dao
@@ -18,18 +21,42 @@ interface TransactionDao {
     @Insert
     void insert(Transaction transaction);
 
+    @Update
+    void update(Transaction transaction);
+
     @Delete
     void delete(Transaction transaction);
 
     // 1. Get transactions between Start Date and End Date
-    @Query("SELECT * FROM transactions WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
-    List<Transaction> getTransactionsForMonth(long start, long end);
+    @Query("SELECT * FROM transactions WHERE timestamp >= :start AND timestamp <= :end AND accountId = :accId ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsForMonthFiltered(long start, long end, int accId);
 
     // 2. Calculate Opening Balance (Sum of all older transactions)
-    @Query("SELECT SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END) FROM transactions WHERE timestamp < :start")
-    double getPreviousBalance(long start);
+    @Query("SELECT SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END) FROM transactions WHERE timestamp < :start AND accountId = :accId")
+    double getPreviousBalanceFiltered(long start, int accId);
 
     // 3. Total Current Balance (All time) for the bottom bar
     @Query("SELECT SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END) FROM transactions")
     double getTotalBalance();
+
+    @Query("SELECT * FROM transactions WHERE accountId = :id ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsForAccount(int id);
+
+    @Query("SELECT SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END) FROM transactions WHERE accountId = :id")
+    double getAccountBalance(int id);
+
+    @Query("DELETE FROM transactions WHERE accountId = :id")
+    void deleteTransactionsForAccount(int id);
+}
+
+@Dao
+interface AccountDao {
+    @Insert
+    void insert (Account account);
+
+    @Query("SELECT * FROM accounts")
+    List<Account> getAllAccounts();
+
+    @Query("DELETE FROM accounts WHERE id = :id")
+    void deleteAccount(int id);
 }
